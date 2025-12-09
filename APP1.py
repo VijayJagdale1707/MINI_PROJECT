@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 def load_data():
     try:
         df = pd.read_csv("grocery_shop_data.csv")
-        # Ensure expiry column exists
         if "Expiry_Date" in df.columns:
             df["Expiry_Date"] = pd.to_datetime(df["Expiry_Date"], errors='coerce').dt.date
         return df
@@ -107,8 +106,6 @@ if menu == "Expiry Alerts":
     alert_period = timedelta(days=3)
 
     df_expired = df[df["Expiry_Date"] < today]
-
-
     df_alert = df[(df["Expiry_Date"] >= today) & (df["Expiry_Date"] <= today + alert_period)]
 
     st.subheader("❌ Expired Items")
@@ -121,7 +118,6 @@ if menu == "Expiry Alerts":
     df_valid = df[df["Expiry_Date"] > today + alert_period]
     st.dataframe(df_valid)
 
-
 # GRAPHICAL REPORT
 if menu == "Graphical Report":
     st.header("📊 Inventory Graphical Report")
@@ -129,9 +125,20 @@ if menu == "Graphical Report":
     if df.empty:
         st.warning("No data available to show graphs.")
     else:
+        today = datetime.now().date()
+
+        # Mark expired items
+        df["Expired"] = df["Expiry_Date"] < today
+
+        # Assign graph colors
+        colors = ["red" if exp else "skyblue" for exp in df["Expired"]]
+
         fig, ax = plt.subplots()
-        ax.bar(df["Item_Name"], df["Quantity"], color='skyblue')
+        ax.bar(df["Item_Name"], df["Quantity"], color=colors)
+
         plt.xticks(rotation=45)
         plt.ylabel("Quantity")
-        plt.title("Inventory Quantities")
+        plt.title("Inventory Quantities (Red = Expired Items)")
+
         st.pyplot(fig)
+        st.info("🔴 Red bars show expired items.  🔵 Blue bars show valid items.")
